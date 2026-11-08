@@ -6,7 +6,7 @@ var SEC=[["ev","EVENT NAME",1],["sub","SUB TITLE",1],["org","ORG NAME",1],["ft",
 var COL=["#ffffff","#000000","#ffd54a","#ff9800","#ef4444","#ec4899","#a855f7","#6366f1","#3b82f6","#22d3ee","#22c55e","#86efac"];
 var DB={tables:[],prof:{name:"",org:"ICONIC ESPORTS ORGANISATION"}};
 try{var r0=JSON.parse(localStorage.getItem(K));if(r0&&r0.tables)DB=r0;}catch(e){}
-var cur=null,tab="M",files=[],sample=null,canScan=false,msg="",cache={};
+var cur=null,tab="M",files=[],sample=null,canScan=true,msg="",cache={};
 function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
 function uid(){return Math.random().toString(36).slice(2,9);}
