@@ -91,17 +91,94 @@ document.addEventListener("change",function(e){var el=e.target,t=T();if(!t||$("v
 function nz(s){return String(s||"").normalize("NFKD").toLowerCase().replace(/[^a-z0-9]/g,"");}
 function lev(a,b){var m=[],i,j;for(i=0;i<=a.length;i++)m[i]=[i];for(j=1;j<=b.length;j++)m[0][j]=j;for(i=1;i<=a.length;i++)for(j=1;j<=b.length;j++)m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return m[a.length][b.length];}
 function same(a,b){a=nz(a);b=nz(b);if(a.length<3||b.length<3)return false;if(a===b||b.indexOf(a)>=0||a.indexOf(b)>=0)return true;return 1-lev(a,b)/Math.max(a.length,b.length)>=0.75;}
-function scan(){var t=T();if(!files.length){$("sm").textContent="আগে ছবি বাছুন।";return;}
-  var sb=$("sb");sb.disabled=true;$("sm").className="mu";$("sm").textContent="স্ক্যান হচ্ছে… কয়েক সেকেন্ড লাগবে।";
-  sample.json('These are screenshots of a Free Fire squad match result screen. Each placement (rank 1 to 12) shows 4 players with their Eliminations. Return ONLY a JSON array: [{"rank":1,"players":[{"name":"exact player name","kills":8}]}]. Include only ranks fully visible. Copy player names exactly as shown.',{images:files,modelTier:"default"}).then(function(res){
-    var arr=Array.isArray(res)?res:(res&&res.rows)||[];var R=nm(),got=0,bad=0;
-    arr.forEach(function(x){var i=(Number(x.rank)||0)-1;if(i<0||i>11||!x.players)return;var kills=0,id="";
-      x.players.forEach(function(p){kills+=Number(p.kills)||0;});
-      t.teams.forEach(function(tm){if(id)return;x.players.forEach(function(p){if(!id&&((tm.l&&same(tm.l,p.name))||(tm.p&&same(tm.p,p.name))))id=tm.id;});});
-      R[i]={t:id,k:kills,u:id?0:1};got++;if(!id)bad++;});
-    if(!got)throw {code:"empty"};
-    t.matches[t.mi]=R;save();rE();draw();$("sm").className=bad?"er":"ok";$("sm").textContent=got+" পজিশন পাওয়া গেছে"+(bad?", "+bad+"টা টিম মেলেনি (লাল দাগ), নিজে বেছে নিন।":"।");msg=$("sm").textContent;sb.disabled=false;
-  }).catch(function(e){$("sm").className="er";$("sm").textContent=e&&e.code==="not_granted"?"অনুমতি দেওয়া হয়নি।":e&&e.code==="rate_limited"?"একটু পরে চেষ্টা করুন।":"স্ক্যান হয়নি। পরিষ্কার স্ক্রিনশট দিন।";sb.disabled=false;});}
+
+function scan(){
+  var t=T();
+  if(!files.length){
+    $("sm").textContent="আগে ছবি বাছুন।";
+    return;
+  }
+  if(files.length>2){
+    $("sm").textContent="সর্বোচ্চ ২টি ছবি দিন।";
+    return;
+  }
+
+  var sb=$("sb");
+  sb.disabled=true;
+  $("sm").className="mu";
+  $("sm").textContent="স্ক্যান হচ্ছে…";
+
+  var WORKER_URL="https://holy-silence-b7f8.hdhhx3688.workers.dev";
+
+  Promise.all(files.map(function(f){
+    return new Promise(function(resolve,reject){
+      var reader=new FileReader();
+      reader.onload=function(){
+        resolve({
+          mimeType:f.type || "image/jpeg",
+          data:String(reader.result).split(",")[1]
+        });
+      };
+      reader.onerror=reject;
+      reader.readAsDataURL(f);
+    });
+  })).then(function(images){
+    return fetch(WORKER_URL,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({images:images})
+    });
+  }).then(function(res){
+    return res.json().then(function(data){
+      if(!res.ok) throw new Error(data.error || "Scan failed");
+      return data;
+    });
+  }).then(function(data){
+    var arr=data.rows || [];
+    var R=nm(),got=0,bad=0;
+
+    arr.forEach(function(x){
+      var i=(Number(x.rank)||0)-1;
+      if(i<0 || i>11 || !x.players) return;
+
+      var kills=0,id="";
+      x.players.forEach(function(p){
+        kills+=Number(p.kills)||0;
+      });
+
+      t.teams.forEach(function(tm){
+        if(id)return;
+        x.players.forEach(function(p){
+          if(!id && (
+            (tm.l && same(tm.l,p.name)) ||
+            (tm.p && same(tm.p,p.name))
+          )) id=tm.id;
+        });
+      });
+
+      R[i]={t:id,k:kills,u:id?0:1};
+      got++;
+      if(!id)bad++;
+    });
+
+    if(!got) throw new Error("No rows found");
+
+    t.matches[t.mi]=R;
+    save();
+    rE();
+    draw();
+
+    $("sm").className=bad?"er":"ok";
+    $("sm").textContent=got+" পজিশন পাওয়া গেছে"+
+      (bad?", কিছু টিম নিজে বেছে নিন।":"।");
+    sb.disabled=false;
+
+  }).catch(function(e){
+    $("sm").className="er";
+    $("sm").textContent="স্ক্যান হয়নি: "+e.message;
+    sb.disabled=false;
+  });
+}
 
 /* ---------- design & text panes ---------- */
 function opt(list,v,first){return (first?'<option value="">'+first+'</option>':"")+list.map(function(x){return '<option'+(x===v?" selected":"")+'>'+x+'</option>';}).join("");}
