@@ -260,7 +260,8 @@ $("dlb").onclick=function(){render();cv.toBlob(function(b){var m=$("sv");m.class
 function imUp(k,f){var t=T(),mx={org:320,game:480,bg:1100,char:800}[k],im=new Image(),u=URL.createObjectURL(f);im.onload=function(){var s=Math.min(1,mx/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*s;c.height=im.height*s;c.getContext("2d").drawImage(im,0,0,c.width,c.height);t.im[k]=c.toDataURL(k==="bg"?"image/jpeg":"image/png",.85);URL.revokeObjectURL(u);save();rD();draw();};im.src=u;}
 document.addEventListener("paste",function(e){var el=e.target,cd=e.clipboardData,f=null;if(!cd)return;Array.prototype.forEach.call(cd.files||[],function(x){if(!f&&x.type.indexOf("image/")===0)f=x;});if(!f)Array.prototype.forEach.call(cd.items||[],function(it){if(!f&&it.type.indexOf("image/")===0)f=it.getAsFile();});if(!f||!(el.classList&&el.classList.contains("pb")))return;e.preventDefault();if(el.id==="pb"){files.push(f);if(files.length>2)files.shift();$("fm").textContent="✓ "+files.length+" ছবি বাছা হয়েছে";}else if(el.dataset.pi)imUp(el.dataset.pi,f);});
 $("hl").src=LOGO;
-(async function(){try{sample=await claude.use("sample");if(sample){var l=await sample.limits();canScan=!!(l&&l.images);}}catch(e){}if(!$("vE").hidden)rM();})();
+canScan=true;
+if(!$("vE").hidden)rM();
 try{FONTS.slice(9).forEach(function(f){document.fonts.load('700 20px "'+f+'"').then(draw);});}catch(e){}
 img(LOGO);img(T2);
 show("D");
